@@ -1,6 +1,6 @@
 # 📜 LookO2 GridShell sketch
 
-These definitions are mandatory, provide your GUID, WIFI and PASSWORD to start.
+- These definitions are mandatory, provide your GUID, WIFI and PASSWORD to start.
 
 ```
 #define GRID_U ""
@@ -8,7 +8,7 @@ These definitions are mandatory, provide your GUID, WIFI and PASSWORD to start.
 #define WIFI_P ""
 ```
 
-Customize your settings by updating the following definitions:
+- Customize your settings by updating the following definitions:
 
 ```
 #define LED_BRIGHTNESS 10
@@ -16,12 +16,17 @@ Customize your settings by updating the following definitions:
 ```
 
 
-Access your data over GridShell API:
+- Telemetry CSV format:
+
+`Epoch,Hour,RSSI,PM1,PM2.5,PM10,HCHO,TEMPERATURE`
 
 
+- Access your data over GridShell API:
 
 [JSON Datapoints history](https://api.gridshell.net/fs/JadeChartreuseDromiceiomimusLOOKO24c7525a25d82023918)
 ```https://api.gridshell.net/fs/*GridUserName*LOOKO2*macaddress*ymd```
 
 [JSON Widget latest readings](https://api.gridshell.net/fs/JadeChartreuseDromiceiomimusLOOKO24c7525a25d8J)
 ```https://api.gridshell.net/fs/*GridUserName*LOOKO2*macaddress*ymdJ```
+
+- The JSON can be visualized with Widgeridoo app.
