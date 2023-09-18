@@ -16,3 +16,12 @@ Customize your settings by updating the following definitions:
 ```
 
 
+Access your data over GridShell API:
+
+
+
+[JSON Datapoints history](https://api.gridshell.net/fs/JadeChartreuseDromiceiomimusLOOKO24c7525a25d82023918)
+```https://api.gridshell.net/fs/*GridUserName*LOOKO2*macaddress*ymd```
+
+[JSON Widget latest readings](https://api.gridshell.net/fs/JadeChartreuseDromiceiomimusLOOKO24c7525a25d8J)
+```https://api.gridshell.net/fs/*GridUserName*LOOKO2*macaddress*ymdJ```
