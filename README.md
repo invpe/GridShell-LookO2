@@ -20,9 +20,9 @@ Using latest `V07` GridShell library here with `OTA` disabled so that our sketch
 3. Choose `Default` partitioning
 4. Hit Compile & Upload
 
-# 🧑‍🏭 Maintaining
-
+> **Important**
 Keep an eye on the [GridShell](https://github.com/invpe/GridShell) releases and bump up library to the newest version if required.
+
 
 
 
