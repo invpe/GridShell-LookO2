@@ -22,8 +22,8 @@
 #include <HardwareSerial.h>
 /*------------------*/
 #include "CGridShell.h"
-// Put your grid name here 
-#define GRUD_N ""
+// Put your grid name here
+#define GRID_N ""
 // Put your grid hash here
 #define GRID_U ""
 /*------------------*/
@@ -373,7 +373,7 @@ void loop()
       CGridShell::GetInstance().AddTask("writedfs", strTaskPayload);
 
       // Submit averages, this will determine the colours of the main leds
-      String strAveragesFile = GRUD_N"LOOKO2" + GetMACAddress() + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday);
+      String strAveragesFile = GRID_N"LOOKO2" + GetMACAddress() + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday);
       uiAveragesTaskID = CGridShell::GetInstance().AddTask("l2daily", strAveragesFile);
 
       // Write JSON data (overwrite) - optional
@@ -405,24 +405,26 @@ void loop()
     //
     // Check if uiAveragesTaskID has completed and pull out the last IJP data to shine the leds with index color
     //
-    String strExecPayload = "";
-    HTTPClient http;
-    http.begin("https://api.gridshell.net/task/" + String(uiAveragesTaskID) + ".json");
-    int httpCode = http.GET();
-    String strHttpData = http.getString();
-
-    //
-    if (httpCode == 200)
+    if (GRID_N != "")
     {
-      DynamicJsonDocument jsonBuffer(1024);
-      deserializeJson(jsonBuffer, strHttpData);
-      strExecPayload = CGridShell::GetInstance().DecodeBase64(jsonBuffer["ExecPayload"].as<String>());
-    }
-    http.end();
+      String strExecPayload = "";
+      HTTPClient http;
+      http.begin("https://api.gridshell.net/task/" + String(uiAveragesTaskID) + ".json");
+      int httpCode = http.GET();
+      String strHttpData = http.getString();
 
-    
-    if (strExecPayload != "")
-    {
+      //
+      if (httpCode == 200)
+      {
+        DynamicJsonDocument jsonBuffer(1024);
+        deserializeJson(jsonBuffer, strHttpData);
+        strExecPayload = CGridShell::GetInstance().DecodeBase64(jsonBuffer["ExecPayload"].as<String>());
+      }
+      http.end();
+
+
+      if (strExecPayload != "")
+      {
         DynamicJsonDocument jsonBuffer(512);
         deserializeJson(jsonBuffer, strExecPayload);
 
@@ -438,8 +440,8 @@ void loop()
           SetRGBColor(255, 200, 0);
         else if (iIJP >= 7) // red
           SetRGBColor(255, 0, 0);
+      }
     }
-
     //
     uiSensorTick = millis();
   }
