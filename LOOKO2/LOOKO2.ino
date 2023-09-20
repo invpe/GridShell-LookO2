@@ -34,7 +34,7 @@
 #define LEDS_PORT 32
 #define PICO_LED_PORT 27
 #define PICO_LED_COUNT 1
-#define LED_BRIGHTNESS 10
+#define LED_BRIGHTNESS 50
 #define TELEMETRY_MINUTES 60000ULL * 10
 /*------------------*/
 // Set your NTP settings here
@@ -374,7 +374,10 @@ void loop()
 
       // Submit averages, this will determine the colours of the main leds
       String strAveragesFile = GRID_N"LOOKO2" + GetMACAddress() + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday);
-      uiAveragesTaskID = CGridShell::GetInstance().AddTask("l2daily", strAveragesFile);
+      uint32_t uiNewTaskID = CGridShell::GetInstance().AddTask("l2daily", strAveragesFile);
+
+      if (uiNewTaskID != 0)
+        uiAveragesTaskID = uiNewTaskID;
 
       // Write JSON data (overwrite) - optional
       /*
