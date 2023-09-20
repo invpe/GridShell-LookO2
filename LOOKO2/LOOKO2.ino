@@ -36,6 +36,7 @@
 #define PICO_LED_COUNT 1
 #define LED_BRIGHTNESS 50
 #define TELEMETRY_MINUTES 60000ULL * 10
+#define API_CHECK_TIMER TELEMETRY_MINUTES / 2
 /*------------------*/
 // Set your NTP settings here
 const char* ntpServer = "pool.ntp.org";
@@ -47,6 +48,7 @@ Adafruit_NeoPixel mPixelsPico(PICO_LED_COUNT, PICO_LED_PORT, NEO_GRB + NEO_KHZ80
 HardwareSerial m_SensorSerial(1);
 uint32_t uiSensorTick = 0;
 uint32_t uiAveragesTaskID = 0;
+uint32_t uiAPICheckTimer = 0;
 /*------------------*/
 struct tSensor
 {
@@ -379,6 +381,8 @@ void loop()
       if (uiNewTaskID != 0)
         uiAveragesTaskID = uiNewTaskID;
 
+      Serial.println("TASK:" + String(uiAveragesTaskID));
+
       // Write JSON data (overwrite) - optional
       /*
         strFileSettings = "LOOKO2" + GetMACAddress() + "J,0,";
@@ -405,10 +409,18 @@ void loop()
       SetPICOLed(255, 0, 0);
     }
 
+
     //
-    // Check if uiAveragesTaskID has completed and pull out the last IJP data to shine the leds with index color
-    //
-    if (GRID_N != "")
+    uiSensorTick = millis();
+  }
+
+  //
+  // Check if uiAveragesTaskID have completed and pull out the last IJP data to shine the leds with index color
+  //
+  if (millis() - uiAPICheckTimer > API_CHECK_TIMER)
+  {
+
+    if (GRID_N != "" && uiAveragesTaskID != 0)
     {
       String strExecPayload = "";
       HTTPClient http;
@@ -445,8 +457,6 @@ void loop()
           SetRGBColor(255, 0, 0);
       }
     }
-    //
-    uiSensorTick = millis();
+    uiAPICheckTimer = API_CHECK_TIMER;
   }
-
 }
