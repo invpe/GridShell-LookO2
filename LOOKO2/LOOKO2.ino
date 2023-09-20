@@ -434,7 +434,7 @@ void loop()
         int iIJP = jsonBuffer["IJP"].as<int>();
 
         if (iIJP == 0) // blue
-          SetRGBColor(255, 0, 0);
+          SetRGBColor(0, 0, 25);
         else if (iIJP == 1 || iIJP == 2) // green
           SetRGBColor(0, 255, 0);
         else if (iIJP == 3 || iIJP == 4) // yellow
