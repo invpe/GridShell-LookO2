@@ -16,11 +16,15 @@
 
 */
 #include "SPIFFS.h"
+#include <ArduinoJson.h>
 #include <Adafruit_NeoPixel.h>
 #include <ArduinoOTA.h>
 #include <HardwareSerial.h>
 /*------------------*/
 #include "CGridShell.h"
+// Put your grid name here 
+#define GRUD_N ""
+// Put your grid hash here
 #define GRID_U ""
 /*------------------*/
 #define WIFI_A ""
@@ -31,7 +35,7 @@
 #define PICO_LED_PORT 27
 #define PICO_LED_COUNT 1
 #define LED_BRIGHTNESS 10
-#define TELEMETRY_MINUTES 60000ULL * 1
+#define TELEMETRY_MINUTES 60000ULL * 10
 /*------------------*/
 // Set your NTP settings here
 const char* ntpServer = "pool.ntp.org";
@@ -42,6 +46,7 @@ Adafruit_NeoPixel mPixels(NUM_LEDS, LEDS_PORT, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel mPixelsPico(PICO_LED_COUNT, PICO_LED_PORT, NEO_GRB + NEO_KHZ800);
 HardwareSerial m_SensorSerial(1);
 uint32_t uiSensorTick = 0;
+uint32_t uiAveragesTaskID = 0;
 /*------------------*/
 struct tSensor
 {
@@ -329,7 +334,7 @@ void loop()
   // Tick the GS
   CGridShell::GetInstance().Tick();
 
-  // Tick every TELEMETRY_MINUTES 
+  // Tick every TELEMETRY_MINUTES
   if (millis() - uiSensorTick >= TELEMETRY_MINUTES)
   {
     // Tick the PMS sensor
@@ -367,20 +372,26 @@ void loop()
       String strTaskPayload = strFileSettings + CGridShell::GetInstance().EncodeBase64(strPayload) + ",";
       CGridShell::GetInstance().AddTask("writedfs", strTaskPayload);
 
-      // Write JSON data (overwrite)
-      strFileSettings = "LOOKO2" + GetMACAddress() + "J,0,";
-      strPayload = "{\"Sensor\": \"" + GetMACAddress() + "\",";
-      strPayload += "\"PM1\": " + m_Sensor.m_strPM1 + ",";
-      strPayload += "\"PM2.5\": " + m_Sensor.m_strPM25 + ",";
-      strPayload += "\"PM10\": " + m_Sensor.m_strPM10 + ",";
-      strPayload += "\"HCHO\": " + m_Sensor.m_strHCHO + ",";
-      strPayload += "\"Temperature\": " + m_Sensor.m_strTemp + ",";
-      strPayload += "\"Epoch\": " + String(timeSinceEpoch) + ",";
-      strPayload += "\"Time\": \"" + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday) + " " + String(local_tm.tm_hour) + ":" + String(local_tm.tm_min) + "\"";
-      strPayload += "}";
+      // Submit averages, this will determine the colours of the main leds
+      String strAveragesFile = GRUD_N"LOOKO2" + GetMACAddress() + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday);
+      uiAveragesTaskID = CGridShell::GetInstance().AddTask("l2daily", strAveragesFile);
 
-      strTaskPayload = strFileSettings + CGridShell::GetInstance().EncodeBase64(strPayload) + ",";
-      CGridShell::GetInstance().AddTask("writedfs", strTaskPayload);
+      // Write JSON data (overwrite) - optional
+      /*
+        strFileSettings = "LOOKO2" + GetMACAddress() + "J,0,";
+        strPayload = "{\"Sensor\": \"" + GetMACAddress() + "\",";
+        strPayload += "\"PM1\": " + m_Sensor.m_strPM1 + ",";
+        strPayload += "\"PM2.5\": " + m_Sensor.m_strPM25 + ",";
+        strPayload += "\"PM10\": " + m_Sensor.m_strPM10 + ",";
+        strPayload += "\"HCHO\": " + m_Sensor.m_strHCHO + ",";
+        strPayload += "\"Temperature\": " + m_Sensor.m_strTemp + ",";
+        strPayload += "\"Epoch\": " + String(timeSinceEpoch) + ",";
+        strPayload += "\"Time\": \"" + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday) + " " + String(local_tm.tm_hour) + ":" + String(local_tm.tm_min) + "\"";
+        strPayload += "}";
+
+        strTaskPayload = strFileSettings + CGridShell::GetInstance().EncodeBase64(strPayload) + ",";
+        CGridShell::GetInstance().AddTask("writedfs", strTaskPayload);
+      */
 
       // Turn on green, to notify GRID UP
       SetPICOLed(0, 255, 0);
@@ -389,6 +400,44 @@ void loop()
     {
       // Grid offline, mark red
       SetPICOLed(255, 0, 0);
+    }
+
+    //
+    // Check if uiAveragesTaskID has completed and pull out the last IJP data to shine the leds with index color
+    //
+    String strExecPayload = "";
+    HTTPClient http;
+    http.begin("https://api.gridshell.net/task/" + String(uiAveragesTaskID) + ".json");
+    int httpCode = http.GET();
+    String strHttpData = http.getString();
+
+    //
+    if (httpCode == 200)
+    {
+      DynamicJsonDocument jsonBuffer(1024);
+      deserializeJson(jsonBuffer, strHttpData);
+      strExecPayload = CGridShell::GetInstance().DecodeBase64(jsonBuffer["ExecPayload"].as<String>());
+    }
+    http.end();
+
+    
+    if (strExecPayload != "")
+    {
+        DynamicJsonDocument jsonBuffer(512);
+        deserializeJson(jsonBuffer, strExecPayload);
+
+        int iIJP = jsonBuffer["IJP"].as<int>();
+
+        if (iIJP == 0) // blue
+          SetRGBColor(255, 0, 0);
+        else if (iIJP == 1 || iIJP == 2) // green
+          SetRGBColor(0, 255, 0);
+        else if (iIJP == 3 || iIJP == 4) // yellow
+          SetRGBColor(255, 255, 0);
+        else if (iIJP == 5 || iIJP == 6) // orange
+          SetRGBColor(255, 200, 0);
+        else if (iIJP >= 7) // red
+          SetRGBColor(255, 0, 0);
     }
 
     //
