@@ -1,8 +1,9 @@
 # 📜 LookO2 GridShell sketch
 
-- These definitions are mandatory, provide your GUID, WIFI and PASSWORD to start.
+- These definitions are mandatory, provide your Grid Name, Grid Hash, WIFI and PASSWORD to start.
 
 ```
+#define GRID_N ""
 #define GRID_U ""
 #define WIFI_A ""
 #define WIFI_P ""
