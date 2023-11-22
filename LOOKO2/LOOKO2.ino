@@ -60,6 +60,8 @@ struct tSensor
     m_strHCHO = "0";
     m_strHumi = "0";
     m_strTemp = "0";
+    m_strPress = "0";
+    m_strIJP = "0";
     m_bHCHO = false;
   }
 
@@ -181,6 +183,8 @@ struct tSensor
   String m_strHCHO;
   String m_strHumi;
   String m_strTemp;
+  String m_strPress;
+  String m_strIJP;
   bool m_bHCHO;
 } m_Sensor;
 
@@ -359,16 +363,18 @@ void loop()
 
       String strPayload = "";
       uint32_t uiTaskID = 0;
-
-      String strFileSettings = "LOOKO2" + GetMACAddress() + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday) + ",1,";
+      
+      String strFileSettings = "L2" + GetMACAddress() + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday) + ",1,";
       strPayload = String(timeSinceEpoch) + ",";
-      strPayload += String(local_tm.tm_hour) + ",";
-      strPayload += String(WiFi.RSSI()) + ",";
       strPayload += m_Sensor.m_strPM1 + ",";
       strPayload += m_Sensor.m_strPM25 + ",";
       strPayload += m_Sensor.m_strPM10 + ",";
+      strPayload += m_Sensor.m_strTemp + ",";
+      strPayload += m_Sensor.m_strHumi + ",";
       strPayload += m_Sensor.m_strHCHO + ",";
-      strPayload += m_Sensor.m_strTemp + "\n";
+      strPayload += m_Sensor.m_strPress + ",";
+      strPayload += m_Sensor.m_strIJP + ",";      
+      strPayload += String(WiFi.RSSI()) + "\n";
 
       // Write CSV telemetry data (append)
       String strTaskPayload = strFileSettings + CGridShell::GetInstance().EncodeBase64(strPayload) + ",";
