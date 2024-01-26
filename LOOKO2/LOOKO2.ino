@@ -36,7 +36,7 @@
 #define PICO_LED_COUNT 1
 #define LED_BRIGHTNESS 50
 #define TELEMETRY_MINUTES 60000ULL * 10
-#define AVERAGE_TASK_TIMER TELEMETRY_MINUTES / 2
+#define AVERAGE_TASK_TIMER 60000ULL * 5
 /*------------------*/
 // Set your NTP settings here
 const char* ntpServer = "pool.ntp.org";
@@ -336,7 +336,7 @@ void loop() {
       String strPayload = "";
       uint32_t uiTaskID = 0;
 
-      String strFileSettings = "L2" + GetMACAddress() + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday) + ",1,";
+      String strFileSettings = "L2" + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday) + ",1,";
       strPayload = String(timeSinceEpoch) + ",";
       strPayload += GetMACAddress() + ",";
       strPayload += m_Sensor.m_strPM1 + ",";
@@ -394,7 +394,8 @@ void loop() {
   //
   // Check if uiAveragesTaskID have completed and pull out the last IJP data to shine the leds with index color
   //
-  if (millis() - uiAPICheckTimer > AVERAGE_TASK_TIMER) {
+  if (millis() - uiAPICheckTimer > AVERAGE_TASK_TIMER && CGridShell::GetInstance().Connected()) {
+
 
     if (GRID_N != "" && uiAveragesTaskID != 0) {
       String strExecPayload = CGridShell::GetInstance().GetTask(uiAveragesTaskID);
@@ -417,6 +418,6 @@ void loop() {
           SetRGBColor(255, 0, 0);
       }
     }
-    uiAPICheckTimer = AVERAGE_TASK_TIMER;
+    uiAPICheckTimer = millis();
   }
 }
