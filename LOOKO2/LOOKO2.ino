@@ -363,21 +363,21 @@ void loop() {
       Serial.println("TASK:" + String(uiAveragesTaskID));
 
       // Write JSON data (overwrite) - optional
-      /*
-        strFileSettings = "LOOKO2" + GetMACAddress() + "J,0,";
-        strPayload = "{\"Sensor\": \"" + GetMACAddress() + "\",";
-        strPayload += "\"PM1\": " + m_Sensor.m_strPM1 + ",";
-        strPayload += "\"PM2.5\": " + m_Sensor.m_strPM25 + ",";
-        strPayload += "\"PM10\": " + m_Sensor.m_strPM10 + ",";
-        strPayload += "\"HCHO\": " + m_Sensor.m_strHCHO + ",";
-        strPayload += "\"Temperature\": " + m_Sensor.m_strTemp + ",";
-        strPayload += "\"Epoch\": " + String(timeSinceEpoch) + ",";
-        strPayload += "\"Time\": \"" + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday) + " " + String(local_tm.tm_hour) + ":" + String(local_tm.tm_min) + "\"";
-        strPayload += "}";
 
-        strTaskPayload = strFileSettings + CGridShell::GetInstance().EncodeBase64(strPayload) + ",";
-        CGridShell::GetInstance().AddTask("writedfs", strTaskPayload);
-      */
+      strFileSettings = "LOOKO2" + GetMACAddress() + "J,0,";
+      strPayload = "{\"Sensor\": \"" + GetMACAddress() + "\",";
+      strPayload += "\"PM1\": " + m_Sensor.m_strPM1 + ",";
+      strPayload += "\"PM2.5\": " + m_Sensor.m_strPM25 + ",";
+      strPayload += "\"PM10\": " + m_Sensor.m_strPM10 + ",";
+      strPayload += "\"HCHO\": " + m_Sensor.m_strHCHO + ",";
+      strPayload += "\"Temperature\": " + m_Sensor.m_strTemp + ",";
+      strPayload += "\"Epoch\": " + String(timeSinceEpoch) + ",";
+      strPayload += "\"Time\": \"" + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday) + " " + String(local_tm.tm_hour) + ":" + String(local_tm.tm_min) + "\"";
+      strPayload += "}";
+
+      strTaskPayload = strFileSettings + CGridShell::GetInstance().EncodeBase64(strPayload) + ",";
+      CGridShell::GetInstance().AddTask("writedfs", strTaskPayload);
+
 
       // Turn on green, to notify GRID UP
       SetPICOLed(0, 255, 0);
@@ -401,10 +401,35 @@ void loop() {
       String strExecPayload = CGridShell::GetInstance().GetTask(uiAveragesTaskID);
 
       if (strExecPayload != "") {
-        DynamicJsonDocument jsonBuffer(512);
-        deserializeJson(jsonBuffer, CGridShell::GetInstance().DecodeBase64(strExecPayload));
 
-        int iIJP = jsonBuffer["IJP"].as<int>();
+        // Decode
+        strExecPayload = CGridShell::GetInstance().DecodeBase64(strExecPayload);
+
+        // Check if the last character is a newline and remove it if present
+        if (strExecPayload.endsWith("\n")) {
+          strExecPayload.remove(strExecPayload.length() - 1);
+        }
+
+        // Find the last newline character to isolate the last line
+        int lastNewLine = strExecPayload.lastIndexOf('\n');
+        String lastLine;
+
+        if (lastNewLine != -1) {
+          // Extract the last line
+          lastLine = strExecPayload.substring(lastNewLine + 1);
+        } else {
+          // If there's no newline, the entire string is the last line
+          lastLine = strExecPayload;
+        }
+
+        // Find the comma in the last line
+        int commaIndex = lastLine.indexOf(',');
+
+        // Split the line at the comma
+        String firstPart = lastLine.substring(0, commaIndex);
+        String secondPart = lastLine.substring(commaIndex + 1);
+
+        int iIJP = secondPart.toInt();
 
         if (iIJP == 0)  // blue
           SetRGBColor(0, 0, 25);
