@@ -36,12 +36,12 @@
 #define PICO_LED_COUNT 1
 #define LED_BRIGHTNESS 50
 #define TELEMETRY_MINUTES 60000ULL * 10
-#define API_CHECK_TIMER TELEMETRY_MINUTES / 2
+#define AVERAGE_TASK_TIMER TELEMETRY_MINUTES / 2
 /*------------------*/
 // Set your NTP settings here
 const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = 3600;
-const int   daylightOffset_sec = 3600;
+const long gmtOffset_sec = 3600;
+const int daylightOffset_sec = 3600;
 /*------------------*/
 Adafruit_NeoPixel mPixels(NUM_LEDS, LEDS_PORT, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel mPixelsPico(PICO_LED_COUNT, PICO_LED_PORT, NEO_GRB + NEO_KHZ800);
@@ -50,10 +50,8 @@ uint32_t uiSensorTick = 0;
 uint32_t uiAveragesTaskID = 0;
 uint32_t uiAPICheckTimer = 0;
 /*------------------*/
-struct tSensor
-{
-  tSensor()
-  {
+struct tSensor {
+  tSensor() {
     m_strPM1 = "0";
     m_strPM25 = "0";
     m_strPM10 = "0";
@@ -65,18 +63,14 @@ struct tSensor
     m_bHCHO = false;
   }
 
-  void Start(const bool& rbHCHO)
-  {
+  void Start(const bool& rbHCHO) {
     m_SensorSerial.begin(9600, SERIAL_8N1, 1, 10);
     m_bHCHO = rbHCHO;
   }
-  void Tick()
-  {
-    if (m_SensorSerial.read() == 0x42)
-    {
+  void Tick() {
+    if (m_SensorSerial.read() == 0x42) {
 
-      if (m_bHCHO)
-      {
+      if (m_bHCHO) {
         byte tempData[39];
 
         byte fullPacket[40];
@@ -89,8 +83,7 @@ struct tSensor
         for (int a = 0; a < 39; a++)
           fullPacket[a + 1] = tempData[a];
 
-        if (fullPacket[1] == 0x4D )
-        {
+        if (fullPacket[1] == 0x4D) {
 
           // Calculate Checksum
           unsigned int CR1 = 0, CR2 = 0;
@@ -99,8 +92,7 @@ struct tSensor
           for (int i = 0; i < 38; i++)
             CR2 += fullPacket[i];
 
-          if (CR1 == CR2)
-          {
+          if (CR1 == CR2) {
 
 
             // ug/m3
@@ -112,22 +104,19 @@ struct tSensor
             uint16_t pm25ATMO = (uint16_t)((fullPacket[12] * 256) + fullPacket[13]);
             uint16_t pm10ATMO = (uint16_t)((fullPacket[14] * 256) + fullPacket[15]);
 
-            uint16_t hcho           = (uint16_t)((fullPacket[28] * 256) + fullPacket[29]);
-            int16_t temperature     = (int16_t)((fullPacket[30] * 256) + fullPacket[31]);
-            uint16_t humidity       = (uint16_t)((fullPacket[32] * 256) + fullPacket[33]);
+            uint16_t hcho = (uint16_t)((fullPacket[28] * 256) + fullPacket[29]);
+            int16_t temperature = (int16_t)((fullPacket[30] * 256) + fullPacket[31]);
+            uint16_t humidity = (uint16_t)((fullPacket[32] * 256) + fullPacket[33]);
 
             m_strHumi = String(humidity / 10.0);
             m_strTemp = String(temperature / 10.0);
             m_strHCHO = String(hcho);
-            m_strPM1  = String(pm1ATMO);
+            m_strPM1 = String(pm1ATMO);
             m_strPM25 = String(pm25ATMO);
             m_strPM10 = String(pm10ATMO);
-
           }
         }
-      }
-      else
-      {
+      } else {
         byte tempData[31];
 
         byte fullPacket[32];
@@ -141,22 +130,20 @@ struct tSensor
           fullPacket[a + 1] = tempData[a];
 
         //
-        if (fullPacket[1] == 0x4D )
-        {
+        if (fullPacket[1] == 0x4D) {
 
           // Calculate Checksums
           uint16_t uiReceivedSum = 0;
 
           //
-          for (int a  = 0; a < 32; a++)
+          for (int a = 0; a < 32; a++)
             uiReceivedSum += fullPacket[a];
 
           // Calculate Checksum
-          uint16_t uiSum = (fullPacket[30] * 256 + fullPacket[31])  + fullPacket[30] + fullPacket[31];
+          uint16_t uiSum = (fullPacket[30] * 256 + fullPacket[31]) + fullPacket[30] + fullPacket[31];
 
           // Calculate to Checksum Received
-          if (uiSum == uiReceivedSum)
-          {
+          if (uiSum == uiReceivedSum) {
             // CF=1 20% higher than athmospheric
             //uint16_t pm1 = (uint16_t)((fullPacket[4] * 256) + fullPacket[5]);
             //uint16_t pm25 = (uint16_t)((fullPacket[6] * 256) + fullPacket[7]);
@@ -170,7 +157,6 @@ struct tSensor
             m_strPM1 = String(pm1Atmo);
             m_strPM25 = String(pm25Atmo);
             m_strPM10 = String(pm10Atmo);
-
           }
         }
       }
@@ -188,26 +174,20 @@ struct tSensor
   bool m_bHCHO;
 } m_Sensor;
 
-void SetPICOLed(const int& iR, const int& iG, const int& iB)
-{
+void SetPICOLed(const int& iR, const int& iG, const int& iB) {
   for (int a = 0; a < PICO_LED_COUNT; a++)
     mPixelsPico.setPixelColor(a, mPixels.Color(iR, iG, iB));
   mPixelsPico.show();
-
 }
-void SetRGBColor( const int& iR, const int& iG, const int& iB)
-{
-  for (int a = 0; a < NUM_LEDS; a++)
-  {
+void SetRGBColor(const int& iR, const int& iG, const int& iB) {
+  for (int a = 0; a < NUM_LEDS; a++) {
     mPixels.setPixelColor(a, mPixels.Color(iR, iG, iB));
   }
   mPixels.show();
 }
-void NotifyLED5Seconds(const int& iR, const int& iG, const int& iB)
-{
+void NotifyLED5Seconds(const int& iR, const int& iG, const int& iB) {
   int a = 0;
-  for (a = 0; a < 10; a++)
-  {
+  for (a = 0; a < 10; a++) {
     if (a % 2 == 0)
       SetRGBColor(iR, iG, iB);
     else
@@ -216,12 +196,10 @@ void NotifyLED5Seconds(const int& iR, const int& iG, const int& iB)
     delay(500);
   }
 }
-void Reboot()
-{
+void Reboot() {
   ESP.restart();
 }
-String GetMACAddress()
-{
+String GetMACAddress() {
   uint8_t mac[6];
   esp_read_mac(mac, ESP_MAC_WIFI_STA);
 
@@ -231,8 +209,7 @@ String GetMACAddress()
   strUniqueID.toLowerCase();
   return strUniqueID;
 }
-void setup()
-{
+void setup() {
 
   Serial.begin(115200);
 
@@ -250,8 +227,7 @@ void setup()
   // Initialize Flash storage                      //
   ///////////////////////////////////////////////////
   Serial.println("Mounting FS...");
-  while (!SPIFFS.begin())
-  {
+  while (!SPIFFS.begin()) {
     SPIFFS.format();
     Serial.println("Failed to mount file system");
     delay(1000);
@@ -281,21 +257,21 @@ void setup()
   /////////////////////////////////////////////////////////////
 
   ArduinoOTA
-  .onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH)
-      type = "sketch";
-    else  // U_SPIFFS
-      type = "filesystem";
-  })
-  .onEnd([]() {
-  })
-  .onProgress([](unsigned int progress, unsigned int total) {
-    yield();
-  })
-  .onError([](ota_error_t error) {
-    ESP.restart();
-  });
+    .onStart([]() {
+      String type;
+      if (ArduinoOTA.getCommand() == U_FLASH)
+        type = "sketch";
+      else  // U_SPIFFS
+        type = "filesystem";
+    })
+    .onEnd([]() {
+    })
+    .onProgress([](unsigned int progress, unsigned int total) {
+      yield();
+    })
+    .onError([](ota_error_t error) {
+      ESP.restart();
+    });
   ArduinoOTA.setHostname("GSLOOKO2");
   ArduinoOTA.begin();
 
@@ -306,9 +282,8 @@ void setup()
 
   // Do not enable Auto Updates - you will have to update the sketch yourself
   // Since this is not a Vanilla Node
-  if (CGridShell::GetInstance().Init(GRID_U, false) == true) {}
-  else
-  {
+  if (CGridShell::GetInstance().Init(GRID_U, false) == true) {
+  } else {
     // Light up to inform issues with setting up grid
     NotifyLED5Seconds(255, 0, 0);
     ESP.restart();
@@ -323,12 +298,10 @@ void setup()
   // Light up to inform we're good to go
   NotifyLED5Seconds(0, 255, 0);
 }
-void loop()
-{
+void loop() {
 
   // Check if WiFi available
-  if (WiFi.status() != WL_CONNECTED)
-  {
+  if (WiFi.status() != WL_CONNECTED) {
     // Light up to note we're having WiFi issues
     NotifyLED5Seconds(255, 255, 0);
     ESP.restart();
@@ -341,8 +314,7 @@ void loop()
   CGridShell::GetInstance().Tick();
 
   // Tick every TELEMETRY_MINUTES
-  if (millis() - uiSensorTick >= TELEMETRY_MINUTES)
-  {
+  if (millis() - uiSensorTick >= TELEMETRY_MINUTES) {
     // Tick the PMS sensor
     m_Sensor.Tick();
 
@@ -356,16 +328,17 @@ void loop()
     time_t timeSinceEpoch = mktime(&local_tm);
 
     // Ensure grid online & store telemetry
-    if (CGridShell::GetInstance().Connected())
-    {
+    if (CGridShell::GetInstance().Connected()) {
+
       // Mark adding tasks
       SetPICOLed(255, 255, 255);
 
       String strPayload = "";
       uint32_t uiTaskID = 0;
-      
+
       String strFileSettings = "L2" + GetMACAddress() + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday) + ",1,";
       strPayload = String(timeSinceEpoch) + ",";
+      strPayload += GetMACAddress() + ",";
       strPayload += m_Sensor.m_strPM1 + ",";
       strPayload += m_Sensor.m_strPM25 + ",";
       strPayload += m_Sensor.m_strPM10 + ",";
@@ -373,7 +346,7 @@ void loop()
       strPayload += m_Sensor.m_strHumi + ",";
       strPayload += m_Sensor.m_strHCHO + ",";
       strPayload += m_Sensor.m_strPress + ",";
-      strPayload += m_Sensor.m_strIJP + ",";      
+      strPayload += m_Sensor.m_strIJP + ",";
       strPayload += String(WiFi.RSSI()) + "\n";
 
       // Write CSV telemetry data (append)
@@ -381,8 +354,8 @@ void loop()
       CGridShell::GetInstance().AddTask("writedfs", strTaskPayload);
 
       // Submit averages, this will determine the colours of the main leds
-      String strAveragesFile = GRID_N"LOOKO2" + GetMACAddress() + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday);
-      uint32_t uiNewTaskID = CGridShell::GetInstance().AddTask("l2daily", strAveragesFile);
+      String strAveragesFile = GRID_N "L2" + String(local_tm.tm_year + 1900) + String(local_tm.tm_mon + 1) + String(local_tm.tm_mday);
+      uint32_t uiNewTaskID = CGridShell::GetInstance().AddTask("l2daily", strAveragesFile + "," + GetMACAddress() + ",");
 
       if (uiNewTaskID != 0)
         uiAveragesTaskID = uiNewTaskID;
@@ -408,9 +381,7 @@ void loop()
 
       // Turn on green, to notify GRID UP
       SetPICOLed(0, 255, 0);
-    }
-    else
-    {
+    } else {
       // Grid offline, mark red
       SetPICOLed(255, 0, 0);
     }
@@ -423,46 +394,29 @@ void loop()
   //
   // Check if uiAveragesTaskID have completed and pull out the last IJP data to shine the leds with index color
   //
-  if (millis() - uiAPICheckTimer > API_CHECK_TIMER)
-  {
+  if (millis() - uiAPICheckTimer > AVERAGE_TASK_TIMER) {
 
-    if (GRID_N != "" && uiAveragesTaskID != 0)
-    {
-      String strExecPayload = "";
-      HTTPClient http;
-      http.begin("https://api.gridshell.net/task/" + String(uiAveragesTaskID) + ".json");
-      int httpCode = http.GET();
-      String strHttpData = http.getString();
+    if (GRID_N != "" && uiAveragesTaskID != 0) {
+      String strExecPayload = CGridShell::GetInstance().GetTask(uiAveragesTaskID);
 
-      //
-      if (httpCode == 200)
-      {
-        DynamicJsonDocument jsonBuffer(1024);
-        deserializeJson(jsonBuffer, strHttpData);
-        strExecPayload = CGridShell::GetInstance().DecodeBase64(jsonBuffer["ExecPayload"].as<String>());
-      }
-      http.end();
-
-
-      if (strExecPayload != "")
-      {
+      if (strExecPayload != "") {
         DynamicJsonDocument jsonBuffer(512);
-        deserializeJson(jsonBuffer, strExecPayload);
+        deserializeJson(jsonBuffer, CGridShell::GetInstance().DecodeBase64(strExecPayload));
 
         int iIJP = jsonBuffer["IJP"].as<int>();
 
-        if (iIJP == 0) // blue
+        if (iIJP == 0)  // blue
           SetRGBColor(0, 0, 25);
-        else if (iIJP == 1 || iIJP == 2) // green
+        else if (iIJP == 1 || iIJP == 2)  // green
           SetRGBColor(0, 255, 0);
-        else if (iIJP == 3 || iIJP == 4) // yellow
+        else if (iIJP == 3 || iIJP == 4)  // yellow
           SetRGBColor(255, 255, 0);
-        else if (iIJP == 5 || iIJP == 6) // orange
+        else if (iIJP == 5 || iIJP == 6)  // orange
           SetRGBColor(255, 200, 0);
-        else if (iIJP >= 7) // red
+        else if (iIJP >= 7)  // red
           SetRGBColor(255, 0, 0);
       }
     }
-    uiAPICheckTimer = API_CHECK_TIMER;
+    uiAPICheckTimer = AVERAGE_TASK_TIMER;
   }
 }
