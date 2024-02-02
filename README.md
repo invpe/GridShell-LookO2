@@ -4,6 +4,8 @@
 
 This is a repository for the [LookO2 Personal Air Quality sensor](https://looko2.com/) customized for contribution and usage of the [GridShell](https://github.com/invpe/GridShell) network.
 
+![image](https://github.com/invpe/LookO2/assets/106522950/13dd5d40-ffcd-447f-a4fb-0e71e338fb9b)
+
 
 # 💻 Hardware
 
